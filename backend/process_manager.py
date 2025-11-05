@@ -34,7 +34,6 @@ class ProcessManager:
         
         try:
             # Launch the process
-            # For console apps, we want to see output but also prevent blocking
             creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP
             if os.name == 'nt':  # Windows
                 # Set up environment to include MinGW DLL paths if needed
