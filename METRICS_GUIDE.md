@@ -43,10 +43,6 @@
 - ETW (Event Tracing for Windows) - Complex setup, requires admin privileges
 - Kernel-mode drivers - Not practical for user-space applications
 
-**Workaround**: You can indirectly infer cache behavior through:
-- Page faults (high page faults = potential cache issues)
-- Memory access patterns (sequential vs random)
-- CPU stall cycles (if using advanced profiling tools)
 
 ### Memory Access Count
 **Status**: ❌ Not directly available via standard Windows APIs
@@ -56,8 +52,3 @@
 - Specialized profiling tools (VTune, Perf)
 - Kernel-mode instrumentation
 - Significant performance overhead
-
-**What You CAN Monitor Instead**:
-- **Page Faults** - Memory accesses that required OS intervention
-- **Working Set Size** - How much memory is actively used
-- **Memory Allocation/Deallocation** - Through your application's allocator
