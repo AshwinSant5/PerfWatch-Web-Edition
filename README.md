@@ -246,7 +246,3 @@ This project is provided as-is for performance monitoring purposes.
 ## 🤝 Contributing
 
 Feel free to submit issues and enhancement requests!
-
----
-
-**Built with ❤️ for Windows Performance Monitoring**
