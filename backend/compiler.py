@@ -24,13 +24,9 @@ class CppCompiler:
     def _setup_temp_directory(self):
         """Create a temporary directory for compilation artifacts"""
         if self.temp_dir is None:
-            # Use a directory that avoids short path names
-            # Try to use a location without spaces or special characters
             base_temp = os.environ.get('TEMP', os.environ.get('TMP', tempfile.gettempdir()))
-            # Create a subdirectory with a simple name
             perfwatch_base = os.path.join(base_temp, 'perfwatch_compile')
             os.makedirs(perfwatch_base, exist_ok=True)
-            # Use a unique subdirectory to avoid conflicts
             import uuid
             unique_id = str(uuid.uuid4())[:8]
             self.temp_dir = os.path.join(perfwatch_base, unique_id)
@@ -120,7 +116,6 @@ class CppCompiler:
                         # MSVC requires special environment, but we can at least detect it
                         logger.info(f"Found MSVC (may require setup): {matches[0]}")
                         # Note: MSVC typically requires vcvars64.bat to be run first
-                        # For now, return it but compilation may fail
                         return matches[0]
         
         return None
@@ -392,7 +387,6 @@ After installation, restart the backend server."""
                         compile_cmd_str = ' '.join(compile_cmd_quoted)
                         # Use cmd /c with proper redirection
                         # Redirect both stdout and stderr to the same file
-                        # Note: Don't quote the entire command, just use cmd /c with the command
                         full_cmd = f'cmd /c {compile_cmd_str} > "{output_file}" 2>&1'
                         
                         logger.info(f"Running file redirection command: {full_cmd}")
@@ -573,7 +567,6 @@ After installation, restart the backend server."""
                 
                 error_msg = "\n".join(error_parts) if error_parts else "Unknown compilation error"
                 
-                # Add helpful context
                 # Add helpful suggestions for common errors
                 suggestions = self._analyze_compilation_errors(error_msg, source_code)
                 
