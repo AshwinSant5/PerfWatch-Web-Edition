@@ -10,8 +10,6 @@
 - Memory thread does CPU-intensive allocations
 - Threads compete for CPU time, causing context switches
 
-**Your value:** 102.4% is reasonable - it shows the program is actively using CPU resources across multiple cores.
-
 ---
 
 ### Memory / Working Set (1639.8 MB)
@@ -23,8 +21,6 @@
 - Has 4 I/O threads each working with file data
 - The sawtooth pattern shows allocate/deallocate cycles
 
-**Your value:** 1639.8 MB is high but expected - the program is designed to use lots of memory.
-
 ---
 
 ### Virtual Memory (1656.3 MB)
@@ -34,8 +30,6 @@
 - Committed but not in physical RAM yet
 - Reserved but not accessed recently
 - Shared libraries or other virtual address space
-
-**Your value:** Slightly higher than working set is normal and healthy.
 
 ---
 
@@ -48,8 +42,6 @@
 - 1 main thread (waits for others)
 - Total: 6 threads
 
-**Your value:** Exactly 6 matches the program design perfectly!
-
 ---
 
 ### Context Switches (32,554)
@@ -61,8 +53,6 @@
 - Threads sleep periodically (voluntary switches)
 - OS scheduler preempts threads (involuntary switches)
 - High frequency: ~1,000+ switches per second
-
-**Your value:** 32,554 over ~30 seconds = ~1,085 switches/second. This is normal for a multi-threaded I/O-intensive program.
 
 ---
 
@@ -79,8 +69,6 @@
 
 **Calculation:** 4 threads × ~30 seconds × ~6 MB/sec per thread = ~720 MB ✓
 
-**Your value:** 714.74 MB matches expected behavior.
-
 ---
 
 ### I/O Write (717.00 MB)
@@ -92,8 +80,6 @@
 - Writes random data to files
 - Slightly higher than read because it writes first, then reads
 
-**Your value:** 717.00 MB is slightly higher than read, which makes sense - writes happen first.
-
 ---
 
 ### I/O Read Ops (1,296) & Write Ops (1,408)
@@ -104,8 +90,6 @@
 - With 100KB-1MB chunks, you get ~500-1000 ops per MB
 - 1,296 read ops for 714 MB = ~0.55 MB per op ✓
 - 1,408 write ops for 717 MB = ~0.51 MB per op ✓
-
-**Your value:** Operations per MB ratios are reasonable for 100KB-1MB chunk sizes.
 
 ---
 
@@ -125,8 +109,6 @@
 - Or memory is reserved but not actively accessed
 - Windows can page out less-used memory to make room for other processes
 
-**Your value:** 1681.4 MB is reasonable - it's the total committed memory.
-
 ---
 
 ### Shared Memory (0.0 MB)
@@ -137,8 +119,6 @@
 - Doesn't load many shared libraries
 - All memory is private to this process
 - Working Set - Private Bytes would be negative, so it shows 0
-
-**Your value:** 0.0 MB is expected - your program uses only private memory.
 
 ---
 
@@ -156,8 +136,6 @@
 - Memory pressure (OS paging out memory)
 - Performance degradation (disk is much slower than RAM)
 
-**Your value:** 0 is excellent - means your system has sufficient RAM.
-
 ---
 
 ## Windows-Specific Metrics
@@ -166,8 +144,6 @@
 **What it means:** How long the process has been running since it was created.
 
 **Why it makes sense:** Your program runs for 60 seconds total. At 30 seconds, it's halfway through execution.
-
-**Your value:** 0m 30s matches the program's execution time.
 
 ---
 
@@ -178,8 +154,6 @@
 - Your system has 8 CPU cores (or 4 cores with hyperthreading = 8 logical cores)
 - The process hasn't been restricted to specific cores
 - Allows maximum parallelism across all cores
-
-**Your value:** 8 cores allows your 6 threads to run in parallel efficiently.
 
 ---
 
@@ -199,8 +173,6 @@
 - High: High priority
 - Realtime: Highest (system-critical)
 
-**Your value:** Normal is expected for a regular user program.
-
 ---
 
 ### Network Connections (N/A)
@@ -211,8 +183,6 @@
 - Doesn't open network sockets
 - Doesn't connect to servers
 - No network activity
-
-**Your value:** N/A is correct - no network connections.
 
 ---
 
@@ -232,8 +202,6 @@
 - System limits (Windows has handle limits per process)
 - Performance issues
 
-**Your value:** 83 is reasonable and shows active file management.
-
 ---
 
 ## CPU Time Breakdown
@@ -246,8 +214,6 @@
 - Manipulates memory (allocations, deallocations)
 - Processes data (filling buffers)
 - All this is "user mode" work
-
-**Your value:** 10.84s of actual computation over 30 seconds = 36% CPU usage in user mode.
 
 ---
 
@@ -266,21 +232,6 @@
 - Memory management involves OS calls
 - This is normal for I/O-heavy programs
 
-**Your value:** Higher system time is expected for file I/O programs.
-
 ---
 
-## Summary: Why These Metrics Make Perfect Sense
-
-1. **High Memory Usage:** Program allocates large chunks (500MB+) - matches 1639 MB
-2. **High I/O:** 4 threads continuously reading/writing - matches 714/717 MB
-3. **6 Threads:** 4 I/O + 1 memory + 1 main = exactly 6 threads
-4. **High Context Switches:** Multi-threaded + I/O waiting = 32,554 switches
-5. **Zero Page Faults:** System has enough RAM - no swapping needed
-6. **Private > Working Set:** Some committed memory not in physical RAM (normal)
-7. **System Time > User Time:** I/O-heavy programs spend more time in kernel mode
-8. **83 Open Handles:** Multiple files open simultaneously
-9. **CPU 102%:** Multi-threaded work across multiple cores
-
-All metrics align perfectly with the program's design and behavior!
 
