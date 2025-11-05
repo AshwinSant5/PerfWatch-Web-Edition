@@ -2,6 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <vector>
+#include <cmath>
 
 // Simple test program - good for quick testing
 int main() {

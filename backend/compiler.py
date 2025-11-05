@@ -574,10 +574,18 @@ After installation, restart the backend server."""
                 error_msg = "\n".join(error_parts) if error_parts else "Unknown compilation error"
                 
                 # Add helpful context
+                # Add helpful suggestions for common errors
+                suggestions = self._analyze_compilation_errors(error_msg, source_code)
+                
                 full_error = f"Compilation Error:\n{error_msg}"
+                if suggestions:
+                    full_error += f"\n\n💡 Suggestions:\n{suggestions}"
+                
                 if len(full_error) > 3000:
                     # Truncate very long errors but keep the end
                     full_error = f"Compilation Error:\n{error_msg[:2000]}...\n(Error message truncated)\n\nLast 1000 chars:\n{error_msg[-1000:]}"
+                    if suggestions:
+                        full_error += f"\n\n💡 Suggestions:\n{suggestions}"
                 
                 logger.error(f"Compilation failed: {error_msg}")
                 return False, full_error, None
@@ -617,6 +625,104 @@ After installation, restart the backend server."""
     def get_compiled_exe(self) -> Optional[str]:
         """Get the path to the compiled executable"""
         return self.compiled_exe
+    
+    def _analyze_compilation_errors(self, error_msg: str, source_code: str) -> str:
+        """
+        Analyze compilation errors and suggest common fixes
+        
+        Returns:
+            String with suggestions, or empty string if none
+        """
+        suggestions = []
+        error_lower = error_msg.lower()
+        
+        # Check for missing header suggestions
+        missing_headers = {}
+        
+        # Math functions - check for various patterns
+        math_funcs = ['sin', 'cos', 'tan', 'sqrt', 'pow', 'exp', 'log', 'fabs', 'floor', 'ceil', 'asin', 'acos', 'atan']
+        if any(f' {func}(' in error_lower or f"'{func}'" in error_lower or f'std::{func}' in error_lower for func in math_funcs):
+            if 'cmath' not in source_code.lower() and '<cmath>' not in source_code:
+                missing_headers['cmath'] = 'Math functions (sin, cos, sqrt, pow, etc.)'
+        
+        # String functions
+        if any(func in error_lower for func in ['strlen', 'strcpy', 'strcat', 'strcmp', 'strstr']):
+            if 'cstring' not in source_code.lower() and '<cstring>' not in source_code:
+                missing_headers['cstring'] = 'C-style string functions (strlen, strcpy, etc.)'
+        
+        # Time functions
+        if any(func in error_lower for func in ['time', 'clock', 'difftime', 'mktime']):
+            if 'ctime' not in source_code.lower() and '<ctime>' not in source_code:
+                missing_headers['ctime'] = 'Time functions (time, clock, etc.)'
+        
+        # Random number generation
+        if any(func in error_lower for func in ['rand', 'srand', 'random']):
+            if 'cstdlib' not in source_code.lower() and '<cstdlib>' not in source_code:
+                if 'random' not in source_code.lower() or '<random>' not in source_code:
+                    missing_headers['cstdlib'] = 'Random functions (rand, srand) or <random> for C++11'
+        
+        # File I/O
+        if any(func in error_lower for func in ['fopen', 'fclose', 'fread', 'fwrite']):
+            if 'cstdio' not in source_code.lower() and '<cstdio>' not in source_code:
+                missing_headers['cstdio'] = 'C-style file I/O (fopen, fclose, etc.)'
+        
+        # Build suggestions
+        if missing_headers:
+            suggestions.append("Missing header files:")
+            for header, description in missing_headers.items():
+                suggestions.append(f"  • Add #include <{header}> for {description}")
+        
+        # Check for common C++ issues - look for "is not a member of 'std'"
+        if "is not a member of 'std'" in error_msg or "is not a member of std" in error_lower:
+            # Extract the function/type name - try multiple patterns
+            import re
+            func_name = None
+            
+            # Pattern 1: 'std::function_name' is not a member
+            match = re.search(r"'std::(\w+)'", error_msg)
+            if match:
+                func_name = match.group(1)
+            # Pattern 2: 'function_name' is not a member of 'std'
+            if not func_name:
+                match = re.search(r"'(\w+)' is not a member of 'std'", error_msg)
+                if match:
+                    func_name = match.group(1)
+            # Pattern 3: error: 'function_name' is not a member of 'std'; did you mean...
+            # e.g., "error: 'sin' is not a member of 'std'; did you mean 'min'?"
+            if not func_name:
+                match = re.search(r"error:\s*'(\w+)'\s+is not a member of 'std'", error_msg, re.IGNORECASE)
+                if match:
+                    func_name = match.group(1)
+            # Pattern 4: Just look for function name before "is not a member"
+            if not func_name:
+                match = re.search(r"'(\w+)'\s+is not a member", error_msg)
+                if match:
+                    func_name = match.group(1)
+            
+            if func_name:
+                suggestions.append(f"\nNote: '{func_name}' requires a specific header. Common fixes:")
+                if func_name in ['sin', 'cos', 'tan', 'sqrt', 'pow', 'exp', 'log', 'fabs', 'floor', 'ceil', 'asin', 'acos', 'atan', 'abs', 'fmod']:
+                    suggestions.append(f"  • Add #include <cmath> for std::{func_name}")
+                elif func_name in ['string', 'wstring']:
+                    suggestions.append(f"  • Add #include <string> for std::{func_name}")
+                elif func_name in ['vector', 'list', 'map', 'set', 'deque', 'queue', 'stack', 'unordered_map', 'unordered_set']:
+                    suggestions.append(f"  • Add #include <{func_name}> for std::{func_name}")
+                elif func_name in ['cout', 'cin', 'cerr', 'endl', 'clog']:
+                    suggestions.append(f"  • Add #include <iostream> for std::{func_name}")
+                elif func_name in ['thread', 'mutex', 'condition_variable', 'lock_guard', 'unique_lock']:
+                    suggestions.append(f"  • Add #include <thread> or #include <mutex> for std::{func_name}")
+                elif func_name in ['chrono', 'duration', 'time_point']:
+                    suggestions.append(f"  • Add #include <chrono> for std::{func_name}")
+                elif func_name in ['filesystem', 'path', 'directory_iterator']:
+                    suggestions.append(f"  • Add #include <filesystem> for std::{func_name}")
+        
+        # Check for using namespace issues
+        if "did you mean" in error_lower and "std::" in error_msg:
+            suggestions.append("\nTip: Make sure you're using the correct namespace:")
+            suggestions.append("  • Use std::function_name (e.g., std::sin)")
+            suggestions.append("  • Or add 'using namespace std;' at the top (not recommended)")
+        
+        return "\n".join(suggestions) if suggestions else ""
     
     def cleanup(self):
         """Clean up temporary files and directories"""

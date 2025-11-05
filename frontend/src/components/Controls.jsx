@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const Controls = ({ isProfiling, onStart, onStop, status }) => {
   const [mode, setMode] = useState('exe'); // 'exe' or 'cpp'
@@ -8,8 +8,11 @@ const Controls = ({ isProfiling, onStart, onStop, status }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageOverflows, setMessageOverflows] = useState(false);
   const fileInputRef = useRef(null);
   const cppFileInputRef = useRef(null);
+  const messageRef = useRef(null);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -186,6 +189,18 @@ const Controls = ({ isProfiling, onStart, onStop, status }) => {
       setMessage(`Export error: ${error.message}`);
     }
   };
+
+  // Check if message overflows its container
+  useEffect(() => {
+    if (message && messageRef.current) {
+      const element = messageRef.current;
+      const isOverflowing = element.scrollHeight > element.clientHeight || 
+                           element.scrollWidth > element.clientWidth;
+      setMessageOverflows(isOverflowing);
+    } else {
+      setMessageOverflows(false);
+    }
+  }, [message]);
 
   const defaultCppCode = `#include <iostream>
 #include <thread>
@@ -364,12 +379,119 @@ int main() {
         </div>
 
         {message && (
-          <div className={`p-3 rounded text-sm ${
+          <div className={`p-3 rounded text-sm relative ${
             message.includes('Error') 
               ? 'bg-red-900 text-red-200' 
               : 'bg-blue-900 text-blue-200'
           }`}>
-            {message}
+            <div 
+              ref={messageRef}
+              className="pr-8 break-words overflow-hidden"
+              style={{
+                maxHeight: '100px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: 'vertical',
+                wordBreak: 'break-word'
+              }}
+            >
+              {message}
+            </div>
+            {(message.length > 150 || messageOverflows) && (
+              <button
+                onClick={() => setShowMessageModal(true)}
+                className="absolute top-2 right-2 p-1 rounded hover:bg-black/20 transition-colors"
+                title="View full message"
+              >
+                <svg 
+                  className="w-4 h-4" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+                  />
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Message Modal */}
+        {showMessageModal && (
+          <div 
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => setShowMessageModal(false)}
+          >
+            <div 
+              className={`bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col ${
+                message.includes('Error') 
+                  ? 'border-2 border-red-600' 
+                  : 'border-2 border-blue-600'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={`p-4 border-b ${
+                message.includes('Error') 
+                  ? 'bg-red-900/30 border-red-600' 
+                  : 'bg-blue-900/30 border-blue-600'
+              } flex justify-between items-center`}>
+                <h3 className={`text-lg font-semibold ${
+                  message.includes('Error') 
+                    ? 'text-red-200' 
+                    : 'text-blue-200'
+                }`}>
+                  {message.includes('Error') ? '⚠️ Error' : 'ℹ️ Message'}
+                </h3>
+                <button
+                  onClick={() => setShowMessageModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg 
+                    className="w-6 h-6" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M6 18L18 6M6 6l12 12" 
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1">
+                <pre className={`whitespace-pre-wrap break-words text-sm font-mono ${
+                  message.includes('Error') 
+                    ? 'text-red-200' 
+                    : 'text-blue-200'
+                }`}>
+                  {message}
+                </pre>
+              </div>
+              <div className="p-4 border-t border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setShowMessageModal(false)}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
